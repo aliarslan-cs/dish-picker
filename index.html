@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>What to Cook Today? — Random Dish Picker</title>
+  <meta name="description" content="A simple, warm random meal and dish picker to help decide what to cook today." />
+
+  <!-- Google Fonts: Inter for crisp, legible typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS via CDN (Zero build steps required for GitHub Pages) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            cream: '#FAF6F0',
+            card: '#FFFDF9',
+            espresso: '#261C15',
+            taupe: '#6E5D52',
+            almond: '#E6DDD0',
+            terracotta: {
+              DEFAULT: '#C6532D',
+              dark: '#A84220',
+              soft: '#FBECE6',
+            },
+            saffron: {
+              DEFAULT: '#D98A2B',
+              text: '#945308',
+              soft: '#FDF3E3',
+              border: '#F2D7AE',
+            }
+          }
+        }
+      }
+    };
+  </script>
+</head>
+
+<body class="bg-cream text-espresso font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-terracotta/20 selection:text-espresso">
+
+  <!-- Main Centered Container -->
+  <main class="w-full max-w-2xl mx-auto px-4 sm:px-6 pt-8 pb-12 sm:pt-12 flex-1 flex flex-col gap-6 sm:gap-8">
+
+    <!-- Header Section -->
+    <header class="text-center space-y-2.5">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-terracotta-soft text-terracotta border border-terracotta/20 shadow-xs mb-1">
+        <!-- Culinary Pot / Cloche Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 4v2" />
+          <path d="M8 5c0-1 .5-2 1.5-2" />
+          <path d="M16 5c0-1-.5-2-1.5-2" />
+          <path d="M3 13h18" />
+          <path d="M5 13v4a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-4" />
+          <path d="M2 13h20" />
+        </svg>
+      </div>
+      <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-espresso">
+        What to Cook Today?
+      </h1>
+      <p class="text-sm sm:text-base text-taupe max-w-md mx-auto">
+        Choose a category below and spin to pick your next meal from the home kitchen menu.
+      </p>
+    </header>
+
+    <!-- Dynamic Category Filter Section -->
+    <section aria-label="Dish Categories" class="space-y-2.5">
+      <div class="flex items-center justify-between px-1">
+        <span class="text-xs font-semibold uppercase tracking-wider text-taupe">
+          Filter by Category
+        </span>
+        <span id="poolStatusLabel" class="text-xs text-taupe">
+          All categories
+        </span>
+      </div>
+
+      <!-- Category Buttons Container (Populated dynamically via JavaScript) -->
+      <div id="categoryContainer" role="group" aria-label="Menu categories" class="flex flex-wrap gap-2 sm:gap-2.5">
+        <!-- Buttons injected here -->
+      </div>
+    </section>
+
+    <!-- Spotlight Result Card -->
+    <section aria-label="Selected Dish Result" class="relative bg-card border border-almond rounded-3xl shadow-sm overflow-hidden transition-all duration-200">
+      <!-- Warm Decorative Spice Accent Strip -->
+      <div class="h-1.5 w-full bg-gradient-to-r from-terracotta via-saffron to-terracotta"></div>
+
+      <div class="p-6 sm:p-10 flex flex-col items-center text-center">
+        <!-- Top Metadata Row: Category Badge & Copy Action -->
+        <div class="w-full flex items-center justify-between gap-2 mb-5 sm:mb-6">
+          <span id="resultCategoryBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-semibold bg-saffron-soft text-saffron-text border border-saffron-border transition-all">
+            <span class="w-1.5 h-1.5 rounded-full bg-saffron"></span>
+            <span id="resultCategoryText">Ready to pick</span>
+          </span>
+
+          <!-- Subtle Copy Button -->
+          <button
+            id="copyDishBtn"
+            type="button"
+            title="Copy dish name"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-taupe hover:text-espresso hover:bg-cream border border-transparent hover:border-almond transition-colors focus:outline-none focus:ring-2 focus:ring-terracotta/40"
+          >
+            <svg id="copyIcon" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span id="copyBtnLabel">Copy</span>
+          </button>
+        </div>
+
+        <!-- Dish Title Display (Live region for screen readers) -->
+        <div class="min-h-[5.5rem] sm:min-h-[6.5rem] flex flex-col items-center justify-center w-full my-1">
+          <p id="statusEyebrow" class="text-xs font-semibold uppercase tracking-widest text-terracotta mb-2">
+            Tonight's Suggestion
+          </p>
+          <h2
+            id="selectedDishTitle"
+            aria-live="polite"
+            class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-espresso leading-tight transition-all duration-150 break-words max-w-full"
+          >
+            —
+          </h2>
+        </div>
+
+        <!-- Primary Action Button Area -->
+        <div class="mt-7 sm:mt-8 w-full flex flex-col items-center gap-3">
+          <button
+            id="pickDishBtn"
+            type="button"
+            class="w-full sm:w-auto min-w-[240px] inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-terracotta hover:bg-terracotta-dark active:scale-[0.98] text-white font-semibold text-base sm:text-lg shadow-md shadow-terracotta/20 transition-all duration-150 cursor-pointer focus:outline-none focus:ring-4 focus:ring-terracotta/30"
+          >
+            <svg id="spinIcon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="16 3 21 3 21 8"></polyline>
+              <line x1="4" y1="20" x2="21" y2="3"></line>
+              <polyline points="21 16 21 21 16 21"></polyline>
+              <line x1="15" y1="15" x2="21" y2="21"></line>
+              <line x1="4" y1="4" x2="9" y2="9"></line>
+            </svg>
+            <span id="pickBtnText">Pick a Dish</span>
+          </button>
+
+          <p class="hidden sm:block text-xs text-taupe">
+            Press <kbd class="px-1.5 py-0.5 text-[11px] font-semibold text-espresso bg-cream border border-almond rounded-md shadow-2xs">Space</kbd> anytime to spin again
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Picks Session History -->
+    <section id="recentSection" aria-label="Recent Picks" class="hidden space-y-2.5">
+      <div class="flex items-center justify-between px-1">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-taupe">
+          Recent Picks
+        </h3>
+        <button
+          id="clearHistoryBtn"
+          type="button"
+          class="text-xs text-taupe hover:text-terracotta transition-colors cursor-pointer"
+        >
+          Clear
+        </button>
+      </div>
+      <div id="recentList" class="flex flex-wrap gap-2">
+        <!-- Recent dish chips injected here -->
+      </div>
+    </section>
+
+    <!-- Collapsible "Browse Dishes in Category" Section -->
+    <section aria-label="Browse Menu Items" class="bg-card border border-almond rounded-2xl overflow-hidden">
+      <button
+        id="toggleBrowseBtn"
+        type="button"
+        aria-expanded="false"
+        aria-controls="browseDrawer"
+        class="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-cream/60 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-terracotta/40"
+      >
+        <div class="flex items-center gap-2.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-terracotta shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+          <span id="browseTitle" class="text-sm font-semibold text-espresso">
+            Browse Dishes in Any (35)
+          </span>
+        </div>
+
+        <svg id="browseChevron" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-taupe transition-transform duration-200 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+
+      <div id="browseDrawer" class="hidden border-t border-almond px-5 py-4 bg-cream/40">
+        <p class="text-xs text-taupe mb-3">
+          Tap any dish below to select it directly.
+        </p>
+        <div id="browseContent" class="space-y-4">
+          <!-- Categorized or flat dish list injected here -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Minimal GitHub Pages Footer -->
+  <footer class="w-full max-w-2xl mx-auto px-4 py-6 text-center border-t border-almond/70">
+    <p class="text-xs text-taupe">
+      Menu stored directly inside <code class="px-1.5 py-0.5 rounded bg-card border border-almond text-espresso font-mono text-[11px]">index.html</code> — easy to edit &amp; host on GitHub Pages.
+    </p>
+  </footer>
+
+  <!-- =====================================================================
+       APPLICATION DATA & LOGIC
+       To add, remove, or edit dishes or categories:
+       Simply update the `menuData` object below and save index.html!
+       ===================================================================== -->
+  <script>
+    // 1. Embedded JSON Dictionary of Categories & Dishes
+    const menuData = {
+      "Daal & Legumes": [
+        "Yellow daal + chawal",
+        "Black daal + chawal",
+        "Mong daal",
+        "Chanay",
+        "Lobia",
+        "Channay zucchini"
+      ],
+      "Chicken": [
+        "Chanay chicken",
+        "Chicken channay",
+        "Chanay palak",
+        "Palak chicken",
+        "Achar Chicken",
+        "Chicken tikka",
+        "Shimla mirch chicken",
+        "White cream chicken Karachi",
+        "Chicken kofta",
+        "Do pyaza"
+      ],
+      "Gosht / Beef & Mutton": [
+        "Achar Gosht",
+        "Chops with veggies",
+        "Zeera wala gosht with veggies",
+        "Qeema matar aalu",
+        "Qeema Shimla Mirch",
+        "Karela Qeema"
+      ],
+      "Sabzi / Vegetables": [
+        "Palak aalu",
+        "Bhindi",
+        "Bengan aalu chanay",
+        "Bharta"
+      ],
+      "Rice Dishes": [
+        "Biryani",
+        "Mandi",
+        "Matar pulao",
+        "Chana pulao"
+      ],
+      "Pasta / Western": [
+        "White sauce pasta",
+        "Macaroni",
+        "Spaghetti",
+        "Lasagna",
+        "Caterpillar bread"
+      ]
+    };
+
+    // 2. Application State
+    const state = {
+      selectedCategory: "Any",
+      currentDish: null,     // { name: string, category: string }
+      recentPicks: [],       // Array of up to 5 { name: string, category: string }
+      isSpinning: false,
+      isBrowseOpen: false,
+      hasPickedOnce: false
+    };
+
+    // 3. Cached DOM References
+    const dom = {
+      categoryContainer: document.getElementById("categoryContainer"),
+      poolStatusLabel: document.getElementById("poolStatusLabel"),
+      resultCategoryBadge: document.getElementById("resultCategoryBadge"),
+      resultCategoryText: document.getElementById("resultCategoryText"),
+      statusEyebrow: document.getElementById("statusEyebrow"),
+      selectedDishTitle: document.getElementById("selectedDishTitle"),
+      pickDishBtn: document.getElementById("pickDishBtn"),
+      pickBtnText: document.getElementById("pickBtnText"),
+      spinIcon: document.getElementById("spinIcon"),
+      copyDishBtn: document.getElementById("copyDishBtn"),
+      copyBtnLabel: document.getElementById("copyBtnLabel"),
+      recentSection: document.getElementById("recentSection"),
+      recentList: document.getElementById("recentList"),
+      clearHistoryBtn: document.getElementById("clearHistoryBtn"),
+      toggleBrowseBtn: document.getElementById("toggleBrowseBtn"),
+      browseTitle: document.getElementById("browseTitle"),
+      browseChevron: document.getElementById("browseChevron"),
+      browseDrawer: document.getElementById("browseDrawer"),
+      browseContent: document.getElementById("browseContent")
+    };
+
+    /**
+     * Returns a flat list of { name, category } items for a given category key (or "Any").
+     */
+    function getPoolForCategory(category) {
+      if (category === "Any") {
+        const allItems = [];
+        Object.keys(menuData).forEach((cat) => {
+          const items = Array.isArray(menuData[cat]) ? menuData[cat] : [];
+          items.forEach((dish) => {
+            allItems.push({ name: dish, category: cat });
+          });
+        });
+        return allItems;
+      }
+
+      const items = Array.isArray(menuData[category]) ? menuData[category] : [];
+      return items.map((dish) => ({ name: dish, category }));
+    }
+
+    /**
+     * Renders the "Any" button plus dynamic category buttons from Object.keys(menuData).
+     */
+    function renderCategoryButtons() {
+      dom.categoryContainer.innerHTML = "";
+
+      const categories = ["Any", ...Object.keys(menuData)];
+
+      categories.forEach((category) => {
+        const pool = getPoolForCategory(category);
+        const count = pool.length;
+        const isActive = state.selectedCategory === category;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.setAttribute("aria-pressed", String(isActive));
+        btn.dataset.category = category;
+
+        // Apply active vs inactive Tailwind classes
+        btn.className = isActive
+          ? "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-semibold bg-terracotta text-white shadow-xs transition-all duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-terracotta/50"
+          : "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium bg-card text-espresso border border-almond hover:border-terracotta/50 hover:bg-terracotta-soft/40 transition-all duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-terracotta/40";
+
+        const labelSpan = document.createElement("span");
+        labelSpan.textContent = category;
+
+        const countSpan = document.createElement("span");
+        countSpan.textContent = `(${count})`;
+        countSpan.className = isActive
+          ? "text-xs font-medium text-white/85"
+          : "text-xs font-normal text-taupe";
+
+        btn.appendChild(labelSpan);
+        btn.appendChild(countSpan);
+
+        btn.addEventListener("click", () => {
+          selectCategory(category);
+        });
+
+        dom.categoryContainer.appendChild(btn);
+      });
+
+      // Update helper status text and browse drawer header
+      const activePool = getPoolForCategory(state.selectedCategory);
+      dom.poolStatusLabel.textContent =
+        state.selectedCategory === "Any"
+          ? `All categories (${activePool.length} dishes)`
+          : `${activePool.length} ${activePool.length === 1 ? "dish" : "dishes"} available`;
+
+      dom.browseTitle.textContent = `Browse Dishes in ${state.selectedCategory} (${activePool.length})`;
+    }
+
+    /**
+     * Updates the selected category, refreshes button states & browse list, and triggers a roll.
+     */
+    function selectCategory(category) {
+      if (state.isSpinning) return;
+      state.selectedCategory = category;
+      renderCategoryButtons();
+      renderBrowseList();
+      pickRandomDish();
+    }
+
+    /**
+     * Chooses a random dish from the active category pool, avoiding immediate repeats when possible.
+     */
+    function getNextRandomCandidate(pool) {
+      if (pool.length === 0) return null;
+      if (pool.length === 1) return pool[0];
+
+      // Filter out the exact dish currently displayed so we never repeat twice in a row
+      const filtered = state.currentDish
+        ? pool.filter(
+            (item) =>
+              !(
+                item.name === state.currentDish.name &&
+                item.category === state.currentDish.category
+              )
+          )
+        : pool;
+
+      const candidates = filtered.length > 0 ? filtered : pool;
+      const randomIndex = Math.floor(Math.random() * candidates.length);
+      return candidates[randomIndex];
+    }
+
+    /**
+     * Plays a quick, satisfying shuffle animation before landing on the chosen dish.
+     */
+    function pickRandomDish() {
+      if (state.isSpinning) return;
+
+      const pool = getPoolForCategory(state.selectedCategory);
+      if (pool.length === 0) {
+        dom.selectedDishTitle.textContent = "No dishes in this category";
+        dom.resultCategoryText.textContent = state.selectedCategory;
+        return;
+      }
+
+      const finalChoice = getNextRandomCandidate(pool);
+      state.isSpinning = true;
+
+      // Rotate icon and update status eyebrow during roll
+      dom.spinIcon.classList.add("rotate-180");
+      dom.statusEyebrow.textContent = "Shuffling Menu...";
+      dom.selectedDishTitle.classList.add("opacity-75", "scale-[0.98]");
+
+      const totalTicks = pool.length > 1 ? 7 : 1;
+      const tickIntervalMs = 55;
+      let tickCount = 0;
+
+      const timer = setInterval(() => {
+        tickCount += 1;
+
+        if (tickCount < totalTicks) {
+          // Show a quick visual preview tick from the pool
+          const preview = pool[Math.floor(Math.random() * pool.length)];
+          dom.selectedDishTitle.textContent = preview.name;
+          dom.resultCategoryText.textContent = preview.category;
+        } else {
+          clearInterval(timer);
+          finalizeDishSelection(finalChoice, true);
+          state.isSpinning = false;
+          dom.spinIcon.classList.remove("rotate-180");
+          dom.selectedDishTitle.classList.remove("opacity-75", "scale-[0.98]");
+        }
+      }, tickIntervalMs);
+    }
+
+    /**
+     * Commits a selected dish to the spotlight card, updates CTA text, recent history, and browse highlight.
+     */
+    function finalizeDishSelection(dishObj, addToHistory = true) {
+      if (!dishObj) return;
+
+      state.currentDish = dishObj;
+      state.hasPickedOnce = true;
+
+      dom.statusEyebrow.textContent = "Tonight's Suggestion";
+      dom.selectedDishTitle.textContent = dishObj.name;
+      dom.resultCategoryText.textContent = dishObj.category;
+      dom.pickBtnText.textContent = "Spin Again";
+
+      if (addToHistory) {
+        // Avoid duplicating consecutive identical entries in history
+        const lastHistory = state.recentPicks[0];
+        if (
+          !lastHistory ||
+          lastHistory.name !== dishObj.name ||
+          lastHistory.category !== dishObj.category
+        ) {
+          state.recentPicks.unshift(dishObj);
+          if (state.recentPicks.length > 5) {
+            state.recentPicks.pop();
+          }
+        }
+      }
+
+      renderRecentPicks();
+      renderBrowseList();
+    }
+
+    /**
+     * Renders the last up to 5 picks in the current session as clickable chips.
+     */
+    function renderRecentPicks() {
+      // Show recent picks once there is at least 2 picks (or 1+ history items)
+      if (state.recentPicks.length <= 1) {
+        dom.recentSection.classList.add("hidden");
+        return;
+      }
+
+      dom.recentSection.classList.remove("hidden");
+      dom.recentList.innerHTML = "";
+
+      // Display previous picks (excluding index 0 which is currently on screen, or showing up to 4 prior)
+      const previousItems = state.recentPicks.slice(1, 5);
+
+      previousItems.forEach((item) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.title = `Re-select ${item.name} (${item.category})`;
+        chip.className =
+          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-card text-espresso border border-almond hover:border-terracotta/50 hover:bg-terracotta-soft/30 transition-colors cursor-pointer";
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = item.name;
+
+        const catSpan = document.createElement("span");
+        catSpan.textContent = `· ${item.category}`;
+        catSpan.className = "text-taupe text-[11px]";
+
+        chip.appendChild(nameSpan);
+        chip.appendChild(catSpan);
+
+        chip.addEventListener("click", () => {
+          finalizeDishSelection(item, false);
+        });
+
+        dom.recentList.appendChild(chip);
+      });
+    }
+
+    /**
+     * Renders the collapsible dish list for the currently active category (or grouped when "Any" is selected).
+     */
+    function renderBrowseList() {
+      dom.browseContent.innerHTML = "";
+
+      const categoriesToRender =
+        state.selectedCategory === "Any"
+          ? Object.keys(menuData)
+          : [state.selectedCategory];
+
+      categoriesToRender.forEach((category) => {
+        const dishes = Array.isArray(menuData[category]) ? menuData[category] : [];
+        if (dishes.length === 0) return;
+
+        const groupDiv = document.createElement("div");
+        groupDiv.className = "space-y-2";
+
+        if (state.selectedCategory === "Any") {
+          const heading = document.createElement("h4");
+          heading.className =
+            "text-xs font-bold uppercase tracking-wider text-taupe pt-1";
+          heading.textContent = `${category} (${dishes.length})`;
+          groupDiv.appendChild(heading);
+        }
+
+        const grid = document.createElement("div");
+        grid.className = "flex flex-wrap gap-2";
+
+        dishes.forEach((dishName) => {
+          const isCurrent =
+            state.currentDish &&
+            state.currentDish.name === dishName &&
+            state.currentDish.category === category;
+
+          const itemBtn = document.createElement("button");
+          itemBtn.type = "button";
+          itemBtn.textContent = dishName;
+          itemBtn.className = isCurrent
+            ? "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-terracotta-soft text-terracotta border border-terracotta/40 transition-all cursor-pointer"
+            : "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-card text-espresso border border-almond hover:border-terracotta/50 hover:bg-terracotta-soft/30 transition-all cursor-pointer";
+
+          itemBtn.addEventListener("click", () => {
+            finalizeDishSelection({ name: dishName, category }, true);
+          });
+
+          grid.appendChild(itemBtn);
+        });
+
+        groupDiv.appendChild(grid);
+        dom.browseContent.appendChild(groupDiv);
+      });
+    }
+
+    /**
+     * Copies the currently selected dish name to the clipboard safely using execCommand.
+     */
+    function copyCurrentDish() {
+      if (!state.currentDish) return;
+
+      const textToCopy = state.currentDish.name;
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = textToCopy;
+      tempTextArea.setAttribute("readonly", "");
+      tempTextArea.style.position = "fixed";
+      tempTextArea.style.left = "-9999px";
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+
+      try {
+        document.execCommand("copy");
+        dom.copyBtnLabel.textContent = "Copied!";
+        dom.copyDishBtn.classList.add("text-terracotta", "border-terracotta/30", "bg-terracotta-soft/40");
+
+        setTimeout(() => {
+          dom.copyBtnLabel.textContent = "Copy";
+          dom.copyDishBtn.classList.remove("text-terracotta", "border-terracotta/30", "bg-terracotta-soft/40");
+        }, 1600);
+      } catch (err) {
+        dom.copyBtnLabel.textContent = "Press Ctrl+C";
+        setTimeout(() => {
+          dom.copyBtnLabel.textContent = "Copy";
+        }, 1600);
+      } finally {
+        document.body.removeChild(tempTextArea);
+      }
+    }
+
+    // 4. Event Listeners
+    dom.pickDishBtn.addEventListener("click", () => {
+      pickRandomDish();
+    });
+
+    dom.copyDishBtn.addEventListener("click", () => {
+      copyCurrentDish();
+    });
+
+    dom.clearHistoryBtn.addEventListener("click", () => {
+      state.recentPicks = state.currentDish ? [state.currentDish] : [];
+      renderRecentPicks();
+    });
+
+    dom.toggleBrowseBtn.addEventListener("click", () => {
+      state.isBrowseOpen = !state.isBrowseOpen;
+      dom.toggleBrowseBtn.setAttribute("aria-expanded", String(state.isBrowseOpen));
+      dom.browseDrawer.classList.toggle("hidden", !state.isBrowseOpen);
+      dom.browseChevron.classList.toggle("rotate-180", state.isBrowseOpen);
+    });
+
+    // Spacebar keyboard shortcut to spin again from anywhere on the page
+    document.addEventListener("keydown", (event) => {
+      if (event.code === "Space") {
+        const tag = document.activeElement ? document.activeElement.tagName : "";
+        if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT") {
+          event.preventDefault();
+          pickRandomDish();
+        }
+      }
+    });
+
+    // 5. Initial Render & First Pick on Load
+    window.addEventListener("DOMContentLoaded", () => {
+      renderCategoryButtons();
+      renderBrowseList();
+
+      // Immediately present an initial random pick so the page feels alive right away
+      const initialPool = getPoolForCategory("Any");
+      const firstPick = getNextRandomCandidate(initialPool);
+      finalizeDishSelection(firstPick, true);
+      dom.pickBtnText.textContent = "Pick Another Dish";
+    });
+  </script>
+</body>
+</html>
